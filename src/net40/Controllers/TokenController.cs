@@ -11,6 +11,11 @@ namespace OpenAutoClientCredsWebAPI.Controllers
 {
     public class TokenController : Controller
     {
+        /// <summary>
+        /// This route will issue a token if the proper client credentials are passed in. 
+        /// </summary>
+        /// <returns>An ActionResult, either containing an access token and token information, or an explanation as to why a token request was refused.</returns>
+        [HttpPost]
         public ActionResult Issue()
         {
             var authorizationServer = new AuthorizationServer(new AuthorizationServerHost());

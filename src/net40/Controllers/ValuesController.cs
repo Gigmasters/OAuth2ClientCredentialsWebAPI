@@ -8,32 +8,19 @@ using System.Web.Http;
 namespace OpenAutoClientCredsWebAPI.Controllers
 {
     public class ValuesController : ApiController
-    {
-        // GET api/values
-        public IEnumerable<string> Get()
+    {   
+        //This route can be accessed by anyone with any scope.
+        [Authorize]
+        public HttpResponseMessage Get(int id)
         {
-            return new string[] { "value1", "value2" };
+            return Request.CreateResponse(HttpStatusCode.OK, id);
         }
 
-        // GET api/values/5
-        public string Get(int id)
+        //This role can only be accessed by tokens containing the scope "Administrator".
+        [Authorize(Roles = "Administrator")]
+        public HttpResponseMessage Get()
         {
-            return "value";
-        }
-
-        // POST api/values
-        public void Post([FromBody]string value)
-        {
-        }
-
-        // PUT api/values/5
-        public void Put(int id, [FromBody]string value)
-        {
-        }
-
-        // DELETE api/values/5
-        public void Delete(int id)
-        {
+            return Request.CreateResponse(HttpStatusCode.OK, "Here's the keys to the castle, boss!");
         }
     }
 }

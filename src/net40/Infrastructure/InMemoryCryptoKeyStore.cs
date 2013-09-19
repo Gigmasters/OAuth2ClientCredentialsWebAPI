@@ -11,6 +11,12 @@ using DotNetOpenAuth.OAuth2.Messages;
 
 namespace OpenAutoClientCredsWebAPI.Infrastructure
 {
+    /// <summary>
+    /// This is a very basic implementation of ICryptoKeyStore that allows for keys to be stored in memory
+    /// (a public static list of CryptoKeyStoreEntry). This is definitely not suitable for production - consider
+    /// replacing with a persistence layer or at least an in-memory distributed caching system, especially if you're
+    /// running the same auth/resource code on multiple servers. 
+    /// </summary>
     public class InMemoryCryptoKeyStore : ICryptoKeyStore
     {
 

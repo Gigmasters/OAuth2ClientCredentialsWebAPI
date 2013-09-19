@@ -9,6 +9,9 @@ using DotNetOpenAuth.OAuth2.Messages;
 
 namespace OpenAutoClientCredsWebAPI.Infrastructure
 {
+    /// <summary>
+    /// This is an incredibly lightweight implementation of the object that will be stored in the ICryptoKeyStore implementation.
+    /// </summary>
     public class CryptoKeyStoreEntry
     {
         public string Bucket { get; set; }

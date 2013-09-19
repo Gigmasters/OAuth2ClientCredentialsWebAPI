@@ -16,10 +16,10 @@ namespace OpenAutoClientCredsWebAPI
     {
         protected void Application_Start()
         {
+            //Set up log4net based on web.config.
             log4net.Config.XmlConfigurator.Configure();
 
             AreaRegistration.RegisterAllAreas();
-
             WebApiConfig.Register(GlobalConfiguration.Configuration);
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);

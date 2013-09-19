@@ -16,17 +16,18 @@ namespace OpenAutoClientCredsWebAPI.Infrastructure
     public class AuthorizationServerHost : IAuthorizationServerHost
     {
 
-        /// <summary>
         /// Let's assign some private values to internal static properties - consider implementing IoC to use numerous certificates, crypto/nonce key stores, etc.
-        /// </summary>
         internal static ICryptoKeyStore _cryptoKeyStore = new InMemoryCryptoKeyStore();
-        internal static string AuthorizationServerCertificateThumbprint = ConfigurationManager.AppSettings["AuthorizationServerCertificateThumbprint"];
-        internal static string ResourceServerCertificateThumbprint = ConfigurationManager.AppSettings["ResourceServerCertificateThumbprint"];
+
+        /// Create private static fields to store our two server certificates/
+        private static X509Certificate2 _authorizationServerCertificate;
+        private static X509Certificate2 _resourceServerCertificate;
 
         /// <summary>
         /// Consider replacing the InMemoryCryptoKeyStore with a database or caching-layer bound implementation.
         /// </summary>
-		public ICryptoKeyStore CryptoKeyStore {
+		public ICryptoKeyStore CryptoKeyStore 
+        {
             get
             {
                 return _cryptoKeyStore;
@@ -36,15 +37,47 @@ namespace OpenAutoClientCredsWebAPI.Infrastructure
 		/// <summary>
 		/// For basic client_credential grants, this does not need to be implemented.
 		/// </summary>
-		public INonceStore NonceStore {
+		public INonceStore NonceStore 
+        {
 			get {
                 return null;
 			}
 		}
+
+        /// Facades over the private auth server certificate, and loads a certificate 
+        /// from the Windows Certificate Store if one has not already been loaded.
+        public static X509Certificate2 AuthorizationServerCertificate
+        {
+            get
+            {
+                if (_authorizationServerCertificate == null)
+                {
+                    _authorizationServerCertificate = LoadCert(ConfigurationManager.AppSettings["AuthorizationServerCertificateThumbprint"]);
+                }
+                return _authorizationServerCertificate;
+            }
+        }
+
+        /// Facades over the private resource server certificate, and loads a certificate 
+        /// from the Windows Certificate Store if one has not already been loaded.
+        public static X509Certificate2 ResourceServerCertificate
+        {
+            get
+            {
+                if (_resourceServerCertificate== null)
+                {
+                    _resourceServerCertificate = LoadCert(ConfigurationManager.AppSettings["ResourceServerCertificateThumbprint"]);
+                }
+                return _resourceServerCertificate;
+            }
+        }
+
         public AutomatedAuthorizationCheckResponse CheckAuthorizeClientCredentialsGrant(IAccessTokenRequest accessRequest)
         {
             if (accessRequest.ClientAuthenticated)
             {
+                //If the client request is properly authenticated (in this case, the client_secret properly matches the client secret
+                //set up in GetClient()), then we can provide an access token.
                 return new AutomatedAuthorizationCheckResponse(accessRequest, true);
             }
             else
@@ -62,17 +95,20 @@ namespace OpenAutoClientCredsWebAPI.Infrastructure
 
         public AccessTokenResult CreateAccessToken(IAccessTokenRequest accessTokenRequestMessage)
         {
+            //Default to a lifespan of one hours for all tokens.
             var accessToken = new AuthorizationServerAccessToken
             {
-                Lifetime = TimeSpan.FromHours(1)
+                Lifetime = TimeSpan.FromHours(1),
             };
-            var signCert = LoadCert(AuthorizationServerCertificateThumbprint);
-            accessToken.AccessTokenSigningKey =
-                     (RSACryptoServiceProvider)signCert.PrivateKey;
 
-            var encryptCert = LoadCert(ResourceServerCertificateThumbprint);
+            //Provide both signing and encryption keys for the token (the private/public relationships will be reversed
+            //when the resource server digests the token
+            accessToken.AccessTokenSigningKey =
+                     (RSACryptoServiceProvider)AuthorizationServerCertificate.PrivateKey;
             accessToken.ResourceServerEncryptionKey =
-                     (RSACryptoServiceProvider)encryptCert.PublicKey.Key;
+                     (RSACryptoServiceProvider)ResourceServerCertificate.PublicKey.Key;
+
+            //Return an access token result.
             var result = new AccessTokenResult(accessToken);
             return result;
         }
@@ -83,7 +119,7 @@ namespace OpenAutoClientCredsWebAPI.Infrastructure
             //of what kind of client they are, what their secret key is, and what their callback URI is.
 
             //For the purposes of this exercise, let's just a return a client with a hardcoded secret key.
-            return new ClientDescription("thisistotallyasecretkeythesecretestoftheseecrets", new Uri("http://localbroast.com/"), ClientType.Public);
+            return new ClientDescription("secretsecretsarenofun", new Uri("http://localbroast.com/"), ClientType.Public);
         }
 
         public bool IsAuthorizationValid(IAuthorizationDescription authorization)

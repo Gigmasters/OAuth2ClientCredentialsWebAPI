@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
+using OpenAutoClientCredsWebAPI.Infrastructure;
 
 namespace OpenAutoClientCredsWebAPI
 {
@@ -13,6 +14,8 @@ namespace OpenAutoClientCredsWebAPI
                 name: "DefaultApi",
                 routeTemplate: "api/{controller}/{id}",
                 defaults: new { id = RouteParameter.Optional });
+
+            config.MessageHandlers.Add(new BearerTokenHandler());
         }
     }
 }
